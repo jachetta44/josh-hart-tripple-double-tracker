@@ -1,9 +1,9 @@
-name: Josh Hart Triple-Double Bot
+name: Josh Hart Triple Double Bot
 
 on:
   schedule:
-    - cron: "50 4 * * *" # runs every day at 11:50 ET
-  workflow_dispatch:
+    - cron: "*/10 3-6 * * *"  # every 10 minutes, 10pm–1am ET
+  workflow_dispatch:          # manual trigger when needed
 
 jobs:
   run:
