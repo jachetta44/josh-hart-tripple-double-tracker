@@ -13,20 +13,47 @@ KNICKS_ID = 20         # Knicks team ID
 # API CALLS
 # -----------------------------
 
+BALLEDONTLIE_API_KEY = os.getenv("BALLEDONTLIE_API_KEY")
+
 def get_knicks_game():
     """Return today's Knicks game if it exists."""
     today = date.today().isoformat()
     url = f"https://www.balldontlie.io/api/v1/games?team_ids[]={KNICKS_ID}&dates[]={today}"
-    r = requests.get(url).json()
-    return r["data"][0] if r["data"] else None
+    headers = {"Authorization": BALLEDONTLIE_API_KEY} if BALLEDONTLIE_API_KEY else {}
+    
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+    except requests.exceptions.RequestException as e:
+        print("Error fetching game:", e)
+        return None
+    except ValueError as e:
+        print("Error decoding game JSON:", e)
+        print("Raw response:", response.text)
+        return None
+
+    return data.get("data")[0] if data.get("data") else None
 
 
 def get_josh_hart_stats(game_id):
     """Return Josh Hart's stats for this game."""
     url = f"https://www.balldontlie.io/api/v1/stats?game_ids[]={game_id}&player_ids[]={JOSH_HART_ID}"
-    r = requests.get(url).json()
-    return r["data"][0] if r["data"] else None
+    headers = {"Authorization": BALLEDONTLIE_API_KEY} if BALLEDONTLIE_API_KEY else {}
+    
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+    except requests.exceptions.RequestException as e:
+        print("Error fetching stats:", e)
+        return None
+    except ValueError as e:
+        print("Error decoding stats JSON:", e)
+        print("Raw response:", response.text)
+        return None
 
+    return data.get("data")[0] if data.get("data") else None
 
 # -----------------------------
 # LOGIC
@@ -62,7 +89,6 @@ def format_tweet(stats, triple):
     stl = stats["stl"]
     blk = stats["blk"]
 
-    # ----- TRIPLE DOUBLE TWEET -----
     if triple:
         return (
             "🚨🚨 JOSH HART TRIPLE-DOUBLE ALERT 🚨🚨\n\n"
@@ -74,7 +100,6 @@ def format_tweet(stats, triple):
             "🟠🔵 #Knicks 🟠🔵"
         )
 
-    # ----- NO TRIPLE DOUBLE TWEET -----
     return (
         "😭😭 Josh Hart did not record a triple-double tonight 😭😭\n\n"
         f"{mark(pts)} Points\n"
@@ -106,22 +131,30 @@ def tweet(text):
 # -----------------------------
 
 def main():
-    # game = {"id": 999, "status": "Final"}
-    # stats = {"pts": 12, "reb": 11, "ast": 10, "stl": 1, "blk": 0}
+    # Optional TEST MODE: force a tweet without needing a real game
+    if os.getenv("TEST_MODE") == "1":
+        print("TEST MODE: sending test tweet")
+        tweet("🚨 Test tweet from Josh Hart bot — credentials working! 🚨")
+        return
 
     game = get_knicks_game()
     if not game:
-        return  # Knicks didn't play today
+        print("No Knicks game found today or data not yet available.")
+        return
 
     if not is_game_final(game):
-        return  # Game isn't final yet
+        print("Game not final yet. Exiting.")
+        return
 
     stats = get_josh_hart_stats(game["id"])
     if not stats:
-        return  # Stats not available yet
+        print("Stats not available yet. Exiting.")
+        return
 
     triple = is_triple_double(stats)
     tweet_text = format_tweet(stats, triple)
+    print("Sending tweet:")
+    print(tweet_text)
     tweet(tweet_text)
 
 
