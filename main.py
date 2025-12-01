@@ -106,14 +106,17 @@ def tweet(text):
 # -----------------------------
 
 def main():
-    game = get_knicks_game()
+    game = {"id": 999, "status": "Final"}
+    stats = {"pts": 12, "reb": 11, "ast": 10, "stl": 1, "blk": 0}
+
+    # game = get_knicks_game()
     if not game:
         return  # Knicks didn't play today
 
     if not is_game_final(game):
         return  # Game isn't final yet
 
-    stats = get_josh_hart_stats(game["id"])
+    # stats = get_josh_hart_stats(game["id"])
     if not stats:
         return  # Stats not available yet
 
