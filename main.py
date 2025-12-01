@@ -50,22 +50,38 @@ def is_triple_double(stats):
 
 
 def format_tweet(stats, triple):
-    """Create message text for the tweet."""
-    if not triple:
+    """Create tweet text for triple-double or non-triple-double nights."""
+
+    # helper: checkmark if >=10 else X
+    def mark(value):
+        return f"✅ {value}" if value >= 10 else f"❌ {value}"
+
+    pts = stats["pts"]
+    reb = stats["reb"]
+    ast = stats["ast"]
+    stl = stats["stl"]
+    blk = stats["blk"]
+
+    # ----- TRIPLE DOUBLE TWEET -----
+    if triple:
         return (
-            "Josh Hart did not record a triple-double tonight.\n\n"
-            f"PTS: {stats['pts']}  REB: {stats['reb']}  AST: {stats['ast']}\n"
-            f"STL: {stats['stl']}  BLK: {stats['blk']}\n"
-            "#Knicks"
+            "🚨🚨 JOSH HART TRIPLE-DOUBLE ALERT 🚨🚨\n\n"
+            f"{mark(pts)} Points\n"
+            f"{mark(reb)} Rebounds\n"
+            f"{mark(ast)} Assists\n"
+            f"Steals: {stl}\n"
+            f"Blocks: {blk}\n\n"
+            "🟠🔵 #Knicks 🟠🔵"
         )
 
+    # ----- NO TRIPLE DOUBLE TWEET -----
     return (
-        "🚨🚨JOSH HART TRIPLE-DOUBLE ALERT🚨🚨\n\n"
-        f"✅Points:   {stats['pts']}\n"
-        f"✅Rebounds: {stats['reb']}\n"
-        f"✅Assists:  {stats['ast']}\n"
-        f"Steals:   {stats['stl']}\n"
-        f"Blocks:   {stats['blk']}\n\n"
+        "😭😭 Josh Hart did not record a triple-double tonight 😭😭\n\n"
+        f"{mark(pts)} Points\n"
+        f"{mark(reb)} Rebounds\n"
+        f"{mark(ast)} Assists\n"
+        f"Steals: {stl}\n"
+        f"Blocks: {blk}\n\n"
         "🟠🔵 #Knicks 🟠🔵"
     )
 
