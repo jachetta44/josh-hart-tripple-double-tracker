@@ -1,7 +1,8 @@
 import requests
-from datetime import date
+from datetime import datetime
 import os
 import tweepy
+import pytz  # for Eastern Time conversion
 
 # -----------------------------
 # Constants
@@ -17,10 +18,11 @@ BALLEDONTLIE_API_KEY = os.getenv("BALLEDONTLIE_API_KEY")
 
 def get_knicks_game():
     """Return today's Knicks game if it exists."""
-    today = date.today().isoformat()
+    eastern = pytz.timezone("US/Eastern")
+    today = datetime.now(eastern).date().isoformat()
     url = f"https://www.balldontlie.io/api/v1/games?team_ids[]={KNICKS_ID}&dates[]={today}"
     headers = {"Authorization": BALLEDONTLIE_API_KEY} if BALLEDONTLIE_API_KEY else {}
-    
+
     try:
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
@@ -40,7 +42,7 @@ def get_josh_hart_stats(game_id):
     """Return Josh Hart's stats for this game."""
     url = f"https://www.balldontlie.io/api/v1/stats?game_ids[]={game_id}&player_ids[]={JOSH_HART_ID}"
     headers = {"Authorization": BALLEDONTLIE_API_KEY} if BALLEDONTLIE_API_KEY else {}
-    
+
     try:
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
