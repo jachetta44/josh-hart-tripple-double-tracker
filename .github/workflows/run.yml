@@ -17,7 +17,7 @@ jobs:
           python-version: "3.10"
 
       - name: Install dependencies
-        run: pip install tweepy requests
+        run: pip install tweepy requests pytz
 
       - name: Run script
         env:
@@ -26,4 +26,6 @@ jobs:
           X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
           X_ACCESS_SECRET: ${{ secrets.X_ACCESS_SECRET }}
           BALLEDONTLIE_API_KEY: ${{ secrets.BALLEDONTLIE_API_KEY }}
+          TEST_MODE: "0"   # or "1" if testing
         run: python main.py
+
