@@ -25,4 +25,5 @@ jobs:
           X_API_SECRET: ${{ secrets.X_API_SECRET }}
           X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
           X_ACCESS_SECRET: ${{ secrets.X_ACCESS_SECRET }}
+          BALLEDONTLIE_API_KEY: ${{ secrets.BALLEDONTLIE_API_KEY }}
         run: python main.py
