@@ -1,115 +1,42 @@
 import requests
-from datetime import datetime
-import pytz
-import os
-import tweepy
+from datetime import date
 
-# -----------------------------
-# Constants
-# -----------------------------
-API_KEY = os.getenv("BALLDONTLIE_KEY")
-JOSH_HART_ID = 322  # balldontlie player ID
+API_KEY = "c31a6eec-7d5b-43cf-be21-735f14902a97"
+BASE_URL = "https://api.balldontlie.io/v1"
 
-HEADERS = {"Authorization": API_KEY}
+JOSH_HART_ID = 322
 
-
-# -----------------------------
-# API CALLS
-# -----------------------------
-def fetch_stats_for_today():
-    """Return Josh Hart's stats for today's date."""
-    est = pytz.timezone("America/New_York")
-    today = datetime.now(est).strftime("%Y-%m-%d")
-
-    url = "https://api.balldontlie.io/v1/stats"
-    params = {
-        "player_ids[]": JOSH_HART_ID,
-        "dates[]": today
-    }
-
-    resp = requests.get(url, headers=HEADERS, params=params)
+def fetch_json(endpoint, params):
+    params["api_key"] = API_KEY  # force key to always be included
+    url = f"{BASE_URL}/{endpoint}"
+    resp = requests.get(url, params=params)
     resp.raise_for_status()
-    data = resp.json()
-    return data["data"][0] if data["data"] else None
+    return resp.json()
 
+def get_games_for_date(target_date):
+    return fetch_json("games", {"dates[]": target_date.isoformat()})
 
-# -----------------------------
-# LOGIC
-# -----------------------------
-def is_triple_double(stats):
-    pts = stats["pts"]
-    reb = stats["reb"]
-    ast = stats["ast"]
-    stl = stats["stl"]
-    blk = stats["blk"]
-    return sum(v >= 10 for v in [pts, reb, ast, stl, blk]) >= 3
-
-
-def format_tweet(stats, triple):
-    def mark(v):
-        return f"✅ {v}" if v >= 10 else f"❌ {v}"
-
-    pts = stats["pts"]
-    reb = stats["reb"]
-    ast = stats["ast"]
-    stl = stats["stl"]
-    blk = stats["blk"]
-
-    if triple:
-        return (
-            "🚨🚨 JOSH HART TRIPLE-DOUBLE ALERT 🚨🚨\n\n"
-            f"{mark(pts)} Points\n"
-            f"{mark(reb)} Rebounds\n"
-            f"{mark(ast)} Assists\n"
-            f"Steals: {stl}\n"
-            f"Blocks: {blk}\n\n"
-            "🟠🔵 #Knicks 🟠🔵"
-        )
-
-    return (
-        "😔 Josh Hart did NOT record a triple-double tonight.\n\n"
-        f"{mark(pts)} Points\n"
-        f"{mark(reb)} Rebounds\n"
-        f"{mark(ast)} Assists\n"
-        f"Steals: {stl}\n"
-        f"Blocks: {blk}\n\n"
-        "🟠🔵 #Knicks 🟠🔵"
+def get_player_stats(game_id):
+    return fetch_json(
+        "stats",
+        {"game_ids[]": game_id, "player_ids[]": JOSH_HART_ID}
     )
 
-
-# -----------------------------
-# TWEET
-# -----------------------------
-def tweet(text):
-    client = tweepy.Client(
-        consumer_key=os.getenv("X_API_KEY"),
-        consumer_secret=os.getenv("X_API_SECRET"),
-        access_token=os.getenv("X_ACCESS_TOKEN"),
-        access_token_secret=os.getenv("X_ACCESS_SECRET"),
-    )
-    client.create_tweet(text=text)
-
-
-# -----------------------------
-# MAIN
-# -----------------------------
 def main():
-    stats = fetch_stats_for_today()
-    if not stats:
-        print("No Josh Hart stats today — Knicks didn't play.")
+    today = date.today()
+    print("Checking games for:", today)
+
+    games_data = get_games_for_date(today)
+    games = games_data.get("data", [])
+
+    if not games:
+        print("No games today.")
         return
 
-    # Extract game information from stat block
-    game = stats["game"]
-    if game["status"] != "Final":
-        print(f"Game not final yet: status = {game['status']}")
-        return
-
-    triple = is_triple_double(stats)
-    tweet_text = format_tweet(stats, triple)
-    tweet(tweet_text)
-    print("Tweet sent!")
-
+    for game in games:
+        print("Found game:", game["id"])
+        stats = get_player_stats(game["id"])
+        print(stats)
 
 if __name__ == "__main__":
     main()
