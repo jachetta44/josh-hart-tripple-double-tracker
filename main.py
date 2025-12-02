@@ -12,7 +12,7 @@ BASE_URL = "https://api.balldontlie.io/v1"
 # --------------------------------------
 # FORCE SCRIPT TO RUN AS IF IT IS 11/30
 # --------------------------------------
-FORCE_DATE = "2024-11-30"   # <<<<<< REMOVE AFTER TEST
+FORCE_DATE = "2025-11-30"   # <<<<<< REMOVE AFTER TEST
 def get_today():
     return FORCE_DATE or datetime.today().strftime("%Y-%m-%d")
 
