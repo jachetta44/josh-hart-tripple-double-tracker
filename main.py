@@ -9,6 +9,14 @@ KNICKS_ID = 20
 
 BASE_URL = "https://api.balldontlie.io/v1"
 
+# --------------------------------------
+# FORCE SCRIPT TO RUN AS IF IT IS 11/30
+# --------------------------------------
+FORCE_DATE = "2024-11-30"   # <<<<<< REMOVE AFTER TEST
+def get_today():
+    return FORCE_DATE or datetime.today().strftime("%Y-%m-%d")
+
+
 # -----------------------------
 # Helper – authenticated GET
 # -----------------------------
@@ -23,7 +31,7 @@ def api_get(endpoint, params=None):
 # GET TODAY'S GAME
 # -----------------------------
 def get_todays_knicks_game():
-    today = datetime.today().strftime("%Y-%m-%d")
+    today = get_today()
 
     data = api_get(
         "games",
@@ -47,7 +55,6 @@ def get_josh_hart_stats(game_id):
             "player_ids[]": JOSH_HART_ID,
         },
     )
-
     return data["data"][0] if data["data"] else None
 
 
@@ -123,17 +130,21 @@ def send_tweet(text):
 def main():
     game = get_todays_knicks_game()
     if not game:
+        print("No game found for forced date.")
         return
 
     if not is_game_final(game):
+        print("Game is not final yet.")
         return
 
     stats = get_josh_hart_stats(game["id"])
     if not stats:
+        print("No stats found for Josh Hart.")
         return
 
     triple = is_triple_double(stats)
     tweet_text = format_tweet(stats, triple)
+    print(tweet_text)  # so you can see the result before tweeting
     send_tweet(tweet_text)
 
 
