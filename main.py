@@ -1,85 +1,44 @@
-import requests
-from datetime import datetime
-from zoneinfo import ZoneInfo
-import os
+from balldontlie import BalldontlieAPI
 import tweepy
+import os
 
 # -----------------------------
-# CONSTANTS
+# CONFIG
 # -----------------------------
 API_KEY = "c31a6eec-7d5b-43cf-be21-735f14902a97"
 JOSH_HART_ID = 322
 KNICKS_ID = 20
-BASE_URL = "https://api.balldontlie.io/v1"
+
+# Hardcoded test date
+TEST_DATE = "2024-11-30"
+
+api = BalldontlieAPI(api_key=API_KEY)
 
 # -----------------------------
-# AUTH GET
+# FETCH GAME FOR 11/30
 # -----------------------------
-def api_get(endpoint, params=None):
-    headers = {"Authorization": f"Bearer {API_KEY}"}
-    resp = requests.get(f"{BASE_URL}/{endpoint}", params=params, headers=headers)
-
-    print(f"[DEBUG] GET {resp.url} -> {resp.status_code}")
-
-    resp.raise_for_status()
-    return resp.json()
-
-# -----------------------------
-# DATE (NY TIME)
-# -----------------------------
-def get_today_ny():
-    forced = os.getenv("FORCE_DATE")
-    if forced:
-        print(f"[DEBUG] Using FORCE_DATE override: {forced}")
-        return forced
-
-    # today = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
-    today = "2024-11-30"
-    print(f"[DEBUG] NY Today = {today}")
-    return today
-
-# -----------------------------
-# GAME LOOKUP
-# -----------------------------
-def get_todays_knicks_game():
-    today = get_today_ny()
-
-    data = api_get(
-        "games",
-        {
-            "team_ids[]": KNICKS_ID,
-            "dates[]": today,
-        },
+def get_knicks_game_1130():
+    games = api.nba.games.list(
+        team_ids=[KNICKS_ID],
+        dates=[TEST_DATE],
+        per_page=10
     )
-
-    print(f"[DEBUG] Games returned: {len(data['data'])}")
-
-    return data["data"][0] if data["data"] else None
+    return games["data"][0] if games.get("data") else None
 
 # -----------------------------
-# PLAYER STATS
+# FETCH JOSH HART STATS
 # -----------------------------
 def get_josh_hart_stats(game_id):
-    data = api_get(
-        "stats",
-        {
-            "game_ids[]": game_id,
-            "player_ids[]": JOSH_HART_ID,
-        },
+    stats = api.nba.stats.list(
+        game_ids=[game_id],
+        player_ids=[JOSH_HART_ID],
+        per_page=5
     )
-
-    print(f"[DEBUG] Stats returned: {len(data['data'])}")
-
-    return data["data"][0] if data["data"] else None
+    return stats["data"][0] if stats.get("data") else None
 
 # -----------------------------
-# CHECKS
+# TRIPLE DOUBLE LOGIC
 # -----------------------------
-def is_game_final(game):
-    status = game.get("status")
-    print(f"[DEBUG] Game status = {status}")
-    return status == "Final"
-
 def is_triple_double(stats):
     pts = stats.get("pts", 0)
     reb = stats.get("reb", 0)
@@ -88,11 +47,7 @@ def is_triple_double(stats):
     blk = stats.get("blk", 0)
 
     categories = [pts, reb, ast, stl, blk]
-    achieved = sum(v >= 10 for v in categories)
-
-    print(f"[DEBUG] Category counts >=10: {achieved}")
-
-    return achieved >= 3
+    return sum(v >= 10 for v in categories) >= 3
 
 # -----------------------------
 # TWEET FORMAT (YOUR EXACT FORMAT)
@@ -129,49 +84,29 @@ def format_tweet(stats, triple):
         )
 
 # -----------------------------
-# SEND TWEET
-# -----------------------------
-def send_tweet(text):
-    print("[DEBUG] Attempting to tweet...")
-
-    client = tweepy.Client(
-        consumer_key=os.getenv("X_API_KEY"),
-        consumer_secret=os.getenv("X_API_SECRET"),
-        access_token=os.getenv("X_ACCESS_TOKEN"),
-        access_token_secret=os.getenv("X_ACCESS_SECRET"),
-    )
-    resp = client.create_tweet(text=text)
-
-    print(f"[DEBUG] Tweet response: {resp}")
-
-# -----------------------------
 # MAIN
 # -----------------------------
 def main():
-    print("=== Josh Hart Triple Double Bot Started ===")
+    print("=== TEST MODE: 11/30 JOSH HART GAME ===")
 
-    game = get_todays_knicks_game()
+    game = get_knicks_game_1130()
     if not game:
-        print("[DEBUG] No game found today.")
+        print("[ERROR] No Knicks game found for 11/30.")
         return
 
-    if not is_game_final(game):
-        print("[DEBUG] Game not final yet.")
-        return
+    print(f"[DEBUG] Found game: ID={game['id']} | Status={game['status']}")
 
     stats = get_josh_hart_stats(game["id"])
     if not stats:
-        print("[DEBUG] No stats yet.")
+        print("[ERROR] No stats for Josh Hart found.")
         return
 
     triple = is_triple_double(stats)
     tweet_text = format_tweet(stats, triple)
 
-    print("[DEBUG] Final tweet text:")
+    print("\n=== GENERATED TWEET ===")
     print(tweet_text)
-
-    send_tweet(tweet_text)
-
+    print("\n(No tweet sent in test mode.)")
 
 if __name__ == "__main__":
     main()
