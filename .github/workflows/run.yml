@@ -18,7 +18,7 @@ jobs:
         run: pip install tweepy requests pytz balldontlie==0.1.6
 
       - name: Run balldontlie test
-        run: python balldontlie_test.py
+        run: python main.py
 
       - name: Run script
         env:
