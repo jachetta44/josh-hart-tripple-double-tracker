@@ -18,13 +18,18 @@ api = BalldontlieAPI(api_key=API_KEY)
 # ---------------------------
 def get_knicks_game_1130():
     print("=== TEST MODE: Pulling Knicks Game for 11/30 ===")
-    games = api.nba.games.get(
-        team_ids=[20],        # Knicks
-        dates=["2024-11-30"]  # Hardcoded test date
-    )
     
+    # Correct usage: pass query parameters via 'params' dict
+    games = api.nba.games.get(
+        params={
+            "team_ids[]": [20],        # Knicks
+            "dates[]": ["2024-11-30"]  # Hardcoded test date
+        }
+    )
+
     print("Returned:", games.data)
     return games.data[0] if len(games.data) > 0 else None
+
 
 
 # ---------------------------
