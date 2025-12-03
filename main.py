@@ -1,19 +1,10 @@
 import os
 from datetime import datetime
-from dotenv import load_dotenv
 from pyball import PyBall
 
-# ---------------------------
-# TEST MODE (forces 11/30/24 game regardless of date)
-# ---------------------------
 TEST_MODE = True
 
-# ---------------------------
-# Load API Key
-# ---------------------------
-load_dotenv()
 BALLDONTLIE_API_KEY = os.getenv("BALLDONTLIE_API_KEY")
-
 if not BALLDONTLIE_API_KEY:
     raise ValueError("BALLDONTLIE_API_KEY is missing from environment variables!")
 
