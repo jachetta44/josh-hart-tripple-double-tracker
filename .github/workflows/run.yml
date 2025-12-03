@@ -1,9 +1,7 @@
 name: Josh Hart Triple Double Bot
 
 on:
-  schedule:
-    - cron: "*/10 2-6 * * *"  # every 10 minutes from 9pm–1am ET
-  workflow_dispatch:          # manual trigger when needed
+  workflow_dispatch:    # so you can run it manually
 
 jobs:
   run:
@@ -17,7 +15,10 @@ jobs:
           python-version: "3.10"
 
       - name: Install dependencies
-        run: pip install tweepy requests pytz
+        run: pip install tweepy requests pytz balldontlie==0.1.6
+
+      - name: Run balldontlie test
+        run: python balldontlie_test.py
 
       - name: Run script
         env:
@@ -26,6 +27,5 @@ jobs:
           X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
           X_ACCESS_SECRET: ${{ secrets.X_ACCESS_SECRET }}
           BALLEDONTLIE_API_KEY: ${{ secrets.BALLEDONTLIE_API_KEY }}
-          TEST_MODE: "0"   # or "1" if testing
+          TEST_MODE: "1"
         run: python main.py
-
