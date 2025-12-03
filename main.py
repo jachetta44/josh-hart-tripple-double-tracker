@@ -5,11 +5,11 @@ from balldontlie import BalldontlieAPI
 TEST_MODE = os.getenv("TEST_MODE", "0") == "1"
 
 # Get API key from GitHub Actions env
-BALLDONTLIE_API_KEY = os.getenv("BALLDONTLIE_API_KEY")
-if not BALLDONTLIE_API_KEY:
-    raise ValueError("Missing BALLDONTLIE_API_KEY environment variable.")
+BALLEDONTLIE_API_KEY = os.getenv("BALLEDONTLIE_API_KEY")
+if not BALLEDONTLIE_API_KEY:
+    raise ValueError("Missing BALLEDONTLIE_API_KEY environment variable.")
 
-api = BalldontlieAPI(api_key=BALLDONTLIE_API_KEY)
+api = BalldontlieAPI(api_key=BALLEDONTLIE_API_KEY)
 
 
 # ---------------------------
