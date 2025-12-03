@@ -1,112 +1,99 @@
-from balldontlie import BalldontlieAPI
-import tweepy
 import os
+from datetime import datetime
+from dotenv import load_dotenv
+from pyball import PyBall
 
-# -----------------------------
-# CONFIG
-# -----------------------------
-API_KEY = "c31a6eec-7d5b-43cf-be21-735f14902a97"
-JOSH_HART_ID = 322
-KNICKS_ID = 20
+# ---------------------------
+# TEST MODE (forces 11/30/24 game regardless of date)
+# ---------------------------
+TEST_MODE = True
 
-# Hardcoded test date
-TEST_DATE = "2024-11-30"
+# ---------------------------
+# Load API Key
+# ---------------------------
+load_dotenv()
+BALLDONTLIE_API_KEY = os.getenv("BALLDONTLIE_API_KEY")
 
-api = BalldontlieAPI(api_key=API_KEY)
+if not BALLDONTLIE_API_KEY:
+    raise ValueError("BALLDONTLIE_API_KEY is missing from environment variables!")
 
-# -----------------------------
-# FETCH GAME FOR 11/30
-# -----------------------------
+api = PyBall(api_key=BALLDONTLIE_API_KEY)
+
+# ---------------------------
+# Fetch Knicks game for 11/30 (test mode only)
+# ---------------------------
 def get_knicks_game_1130():
-    games = api.nba.games.list(
-        team_ids=[KNICKS_ID],
-        dates=[TEST_DATE],
-        per_page=10
+    """Specifically fetch the Knicks game on 11/30 from BallDontLie."""
+    games = api.games.get(
+        team_ids=[20],     # Knicks ID
+        dates=["2024-11-30"]
     )
-    return games["data"][0] if games.get("data") else None
 
-# -----------------------------
-# FETCH JOSH HART STATS
-# -----------------------------
-def get_josh_hart_stats(game_id):
-    stats = api.nba.stats.list(
-        game_ids=[game_id],
-        player_ids=[JOSH_HART_ID],
-        per_page=5
+    # IMPORTANT: PaginatedListResponse uses `.data`, NOT dict access.
+    if games.data and len(games.data) > 0:
+        return games.data[0]
+    return None
+
+
+# ---------------------------
+# Extract Josh Hart stats
+# ---------------------------
+def get_josh_hart_stats(game_id: int):
+    """Return Josh Hart’s stat line for a single game."""
+    stats = api.stats.get(
+        player_ids=[362],  # Josh Hart ID
+        game_ids=[game_id]
     )
-    return stats["data"][0] if stats.get("data") else None
 
-# -----------------------------
-# TRIPLE DOUBLE LOGIC
-# -----------------------------
-def is_triple_double(stats):
-    pts = stats.get("pts", 0)
-    reb = stats.get("reb", 0)
-    ast = stats.get("ast", 0)
-    stl = stats.get("stl", 0)
-    blk = stats.get("blk", 0)
+    if not stats.data:
+        return None
 
-    categories = [pts, reb, ast, stl, blk]
-    return sum(v >= 10 for v in categories) >= 3
+    return stats.data[0]
 
-# -----------------------------
-# TWEET FORMAT (YOUR EXACT FORMAT)
-# -----------------------------
-def format_tweet(stats, triple):
-    def mark(v):
-        return f"✅ {v}" if v >= 10 else f"❌ {v}"
 
-    pts = stats.get("pts", 0)
-    reb = stats.get("reb", 0)
-    ast = stats.get("ast", 0)
-    stl = stats.get("stl", 0)
-    blk = stats.get("blk", 0)
+# ---------------------------
+# Format message
+# ---------------------------
+def format_stat_message(stats):
+    """Format a human-readable single-line update."""
+    pts = stats.points
+    reb = stats.rebounds
+    ast = stats.assists
 
-    if triple:
-        return (
-            "🚨🚨 JOSH HART TRIPLE-DOUBLE ALERT 🚨🚨\n\n"
-            f"{mark(pts)} Points\n"
-            f"{mark(reb)} Rebounds\n"
-            f"{mark(ast)} Assists\n"
-            f"Steals: {stl}\n"
-            f"Blocks: {blk}\n\n"
-            "🟠🔵 #Knicks 🟠🔵"
-        )
+    td = (pts >= 10 and reb >= 10 and ast >= 10)
+
+    if td:
+        return f"Josh Hart recorded a triple-double tonight! ({pts} PTS, {reb} REB, {ast} AST)"
     else:
-        return (
-            "😭😭 Josh Hart did not record a triple-double tonight 😭😭\n\n"
-            f"{mark(pts)} Points\n"
-            f"{mark(reb)} Rebounds\n"
-            f"{mark(ast)} Assists\n"
-            f"Steals: {stl}\n"
-            f"Blocks: {blk}\n\n"
-            "🟠🔵 #Knicks 🟠🔵"
-        )
+        return f"Josh Hart did NOT record a triple-double. ({pts} PTS, {reb} RBS, {ast} AST)"
 
-# -----------------------------
-# MAIN
-# -----------------------------
+
+# ---------------------------
+# MAIN SCRIPT
+# ---------------------------
 def main():
-    print("=== TEST MODE: 11/30 JOSH HART GAME ===")
+    print("=== TEST MODE: 11/30 JOSH HART GAME ===" if TEST_MODE else "=== LIVE MODE ===")
 
-    game = get_knicks_game_1130()
+    if TEST_MODE:
+        game = get_knicks_game_1130()
+    else:
+        # In real mode you'd calculate "today" and fetch today's game
+        raise NotImplementedError("Not coded yet for real-time mode.")
+
     if not game:
-        print("[ERROR] No Knicks game found for 11/30.")
+        print("No Knicks game found.")
         return
 
-    print(f"[DEBUG] Found game: ID={game['id']} | Status={game['status']}")
+    game_id = game.id
+    stats = get_josh_hart_stats(game_id)
 
-    stats = get_josh_hart_stats(game["id"])
     if not stats:
-        print("[ERROR] No stats for Josh Hart found.")
+        print("No Josh Hart stats found for this game.")
         return
 
-    triple = is_triple_double(stats)
-    tweet_text = format_tweet(stats, triple)
+    message = format_stat_message(stats)
+    print(message)
 
-    print("\n=== GENERATED TWEET ===")
-    print(tweet_text)
-    print("\n(No tweet sent in test mode.)")
 
 if __name__ == "__main__":
     main()
