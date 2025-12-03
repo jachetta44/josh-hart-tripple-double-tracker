@@ -33,7 +33,8 @@ def get_today_ny():
         print(f"[DEBUG] Using FORCE_DATE override: {forced}")
         return forced
 
-    today = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
+    # today = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
+    today = "2024-11-30"
     print(f"[DEBUG] NY Today = {today}")
     return today
 
