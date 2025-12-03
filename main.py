@@ -114,7 +114,18 @@ def send_tweet(text):
         access_token=os.getenv("X_ACCESS_TOKEN"),
         access_token_secret=os.getenv("X_ACCESS_SECRET"),
     )
-    client.create_tweet(text=text)
+
+    print("DEBUG KEYS:")
+    print("X_API_KEY:", bool(os.getenv("X_API_KEY")))
+    print("X_API_SECRET:", bool(os.getenv("X_API_SECRET")))
+    print("X_ACCESS_TOKEN:", bool(os.getenv("X_ACCESS_TOKEN")))
+    print("X_ACCESS_SECRET:", bool(os.getenv("X_ACCESS_SECRET")))
+
+    try:
+        response = client.create_tweet(text=text)
+        print("Tweet response:", response)
+    except Exception as e:
+        print("Tweet failed:", e)
 
 
 # -----------------------------
