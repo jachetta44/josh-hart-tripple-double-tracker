@@ -1,89 +1,111 @@
 import os
 from datetime import datetime
-from pyball import PyBall
+from balldontlie import BalldontlieAPI
 
-TEST_MODE = True
+TEST_MODE = os.getenv("TEST_MODE", "0") == "1"
 
+# Get API key from GitHub Actions env
 BALLDONTLIE_API_KEY = os.getenv("BALLDONTLIE_API_KEY")
 if not BALLDONTLIE_API_KEY:
-    raise ValueError("BALLDONTLIE_API_KEY is missing from environment variables!")
+    raise ValueError("Missing BALLDONTLIE_API_KEY environment variable.")
 
-api = PyBall(api_key=BALLDONTLIE_API_KEY)
+api = BalldontlieAPI(api_key=BALLDONTLIE_API_KEY)
+
 
 # ---------------------------
-# Fetch Knicks game for 11/30 (test mode only)
+# Hardcoded test for 11/30/24
 # ---------------------------
 def get_knicks_game_1130():
-    """Specifically fetch the Knicks game on 11/30 from BallDontLie."""
-    games = api.games.get(
-        team_ids=[20],     # Knicks ID
-        dates=["2024-11-30"]
+    print("=== TEST MODE: Pulling Knicks Game for 11/30 ===")
+    games = api.nba.games.get(
+        team_ids=[20],        # Knicks
+        dates=["2024-11-30"]  # Hardcoded test date
     )
-
-    # IMPORTANT: PaginatedListResponse uses `.data`, NOT dict access.
-    if games.data and len(games.data) > 0:
-        return games.data[0]
-    return None
+    
+    print("Returned:", games.data)
+    return games.data[0] if len(games.data) > 0 else None
 
 
 # ---------------------------
-# Extract Josh Hart stats
+# YOUR ORIGINAL TWEET FORMATTING
 # ---------------------------
-def get_josh_hart_stats(game_id: int):
-    """Return Josh Hart’s stat line for a single game."""
-    stats = api.stats.get(
-        player_ids=[362],  # Josh Hart ID
-        game_ids=[game_id]
-    )
+def format_tweet(stats, triple):
+    def mark(v): 
+        return f"✅ {v}" if v >= 10 else f"❌ {v}"
 
-    if not stats.data:
-        return None
+    pts = stats.get("pts", 0)
+    reb = stats.get("reb", 0)
+    ast = stats.get("ast", 0)
+    stl = stats.get("stl", 0)
+    blk = stats.get("blk", 0)
 
-    return stats.data[0]
-
-
-# ---------------------------
-# Format message
-# ---------------------------
-def format_stat_message(stats):
-    """Format a human-readable single-line update."""
-    pts = stats.points
-    reb = stats.rebounds
-    ast = stats.assists
-
-    td = (pts >= 10 and reb >= 10 and ast >= 10)
-
-    if td:
-        return f"Josh Hart recorded a triple-double tonight! ({pts} PTS, {reb} REB, {ast} AST)"
+    if triple:
+        return (
+            "🚨🚨 JOSH HART TRIPLE-DOUBLE ALERT 🚨🚨\n\n"
+            f"{mark(pts)} Points\n"
+            f"{mark(reb)} Rebounds\n"
+            f"{mark(ast)} Assists\n"
+            f"Steals: {stl}\n"
+            f"Blocks: {blk}\n\n"
+            "🟠🔵 #Knicks 🟠🔵"
+        )
     else:
-        return f"Josh Hart did NOT record a triple-double. ({pts} PTS, {reb} RBS, {ast} AST)"
+        return (
+            "😭😭 Josh Hart did not record a triple-double tonight 😭😭\n\n"
+            f"{mark(pts)} Points\n"
+            f"{mark(reb)} Rebounds\n"
+            f"{mark(ast)} Assists\n"
+            f"Steals: {stl}\n"
+            f"Blocks: {blk}\n\n"
+            "🟠🔵 #Knicks 🟠🔵"
+        )
 
 
 # ---------------------------
-# MAIN SCRIPT
+# Main Logic
 # ---------------------------
 def main():
-    print("=== TEST MODE: 11/30 JOSH HART GAME ===" if TEST_MODE else "=== LIVE MODE ===")
-
     if TEST_MODE:
+        print("=== TEST MODE ENABLED ===")
         game = get_knicks_game_1130()
     else:
-        # In real mode you'd calculate "today" and fetch today's game
-        raise NotImplementedError("Not coded yet for real-time mode.")
+        print("LIVE MODE NOT CONFIGURED HERE YET")
+        return
 
     if not game:
-        print("No Knicks game found.")
+        print("No game found.")
         return
 
-    game_id = game.id
-    stats = get_josh_hart_stats(game_id)
+    # Pull stats for Josh Hart (player_id = 354717)
+    stats_response = api.nba.stats.get(
+        game_ids=[game.id],
+        player_ids=[354717]
+    )
 
-    if not stats:
-        print("No Josh Hart stats found for this game.")
+    stats_list = stats_response.data
+    if not stats_list:
+        print("No Josh Hart stats found.")
         return
 
-    message = format_stat_message(stats)
-    print(message)
+    stats = stats_list[0]
+
+    pts = stats.get("pts", 0)
+    reb = stats.get("reb", 0)
+    ast = stats.get("ast", 0)
+
+    triple = pts >= 10 and reb >= 10 and ast >= 10
+
+    tweet_text = format_tweet(stats, triple)
+
+    print("Tweet:\n", tweet_text)
+
+    if not TEST_MODE:
+        tweet_now(tweet_text)
+
+
+# Mock tweet (prevents tweeting in test mode)
+def tweet_now(text):
+    print("[TWEET SENT]", text)
 
 
 if __name__ == "__main__":
