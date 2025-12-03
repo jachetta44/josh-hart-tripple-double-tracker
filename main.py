@@ -4,12 +4,13 @@ from balldontlie import BalldontlieAPI
 
 TEST_MODE = os.getenv("TEST_MODE", "0") == "1"
 
-# Get API key from GitHub Actions env
-# BALLEDONTLIE_API_KEY = os.getenv("BALLEDONTLIE_API_KEY")
-# if not BALLEDONTLIE_API_KEY:
-#     raise ValueError("Missing BALLEDONTLIE_API_KEY environment variable.")
+# ---------------------------
+# HARDCODED API KEY
+# ---------------------------
+API_KEY = "c31a6eec-7d5b-43cf-be21-735f14902a97"
 
-api = BalldontlieAPI(api_key=API_KEY = "c31a6eec-7d5b-43cf-be21-735f14902a97")
+# Correct initialization — NO SYNTAX ERROR
+api = BalldontlieAPI(api_key=API_KEY)
 
 
 # ---------------------------
